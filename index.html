@@ -1,0 +1,219 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Data Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .auth-container, .app-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+        .auth-container input, .app-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 0;
+            box-sizing: border-box;
+        }
+        .auth-container button, .app-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #000;
+            color: white;
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+        }
+        .auth-container button:hover, .app-container button:hover {
+            background-color: #333;
+        }
+        .toggle-form {
+            margin-top: 15px;
+            color: #666;
+            cursor: pointer;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            border-radius: 0;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="auth-section" class="auth-container">
+            <div id="login-form">
+                <h2>Log In</h2>
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button onclick="login()">Log In</button>
+                <p class="toggle-form" onclick="showSignUp()">Don't have an account? Sign Up</p>
+            </div>
+            <div id="signup-form" style="display: none;">
+                <h2>Sign Up</h2>
+                <input type="email" id="signup-email" placeholder="Email" required>
+                <input type="password" id="signup-password" placeholder="Password" required>
+                <button onclick="signUp()">Sign Up</button>
+                <p class="toggle-form" onclick="showLogIn()">Already have an account? Log In</p>
+            </div>
+        </div>
+
+        <div id="app-section" class="app-container" style="display: none;">
+            <h2>Enter Customer Details</h2>
+            <input type="text" id="name" placeholder="Name" maxlength="10" required>
+            <input type="tel" id="number" placeholder="Number" maxlength="10" required>
+            <button onclick="saveCustomer()">Save</button>
+            <h3>Customer Data</h3>
+            <table id="customerTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Customer data will be inserted here -->
+                </tbody>
+            </table>
+            <button onclick="logout()">Log Out</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script>
+        const supabaseUrl = 'https://swmpfvxwcrpjixitvxwh.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3bXBmdnh3Y3Jwaml4aXR2eHdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NjAwMTcsImV4cCI6MjA2ODQzNjAxN30.Y7SoYlIlv4Mq7eqNT7kq11YpP8kJBzPudMP3szLwc0M';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Check if a user is already logged in
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN') {
+                showAppSection();
+                fetchCustomers();
+            } else if (event === 'SIGNED_OUT') {
+                showAuthSection();
+            }
+        });
+
+        function showSignUp() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('signup-form').style.display = 'block';
+        }
+
+        function showLogIn() {
+            document.getElementById('signup-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'block';
+        }
+
+        function showAuthSection() {
+            document.getElementById('app-section').style.display = 'none';
+            document.getElementById('auth-section').style.display = 'block';
+        }
+
+        function showAppSection() {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('app-section').style.display = 'block';
+        }
+
+        async function signUp() {
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+
+            const { user, error } = await supabase.auth.signUp({
+                email: email,
+                password: password
+            });
+
+            if (error) alert('Error signing up: ' + error.message);
+            else alert('Sign up successful! Please check your email for confirmation.');
+        }
+
+        async function login() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            const { user, error } = await supabase.auth.signIn({
+                email: email,
+                password: password
+            });
+
+            if (error) alert('Error logging in: ' + error.message);
+        }
+
+        async function logout() {
+            const { error } = await supabase.auth.signOut();
+            if (error) console.error('Error logging out:', error);
+        }
+
+        async function saveCustomer() {
+            const name = document.getElementById('name').value;
+            const number = document.getElementById('number').value;
+            const user = supabase.auth.user();
+
+            if (!user) {
+                alert('You must be logged in to save customer data.');
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('customers')
+                .insert([{ name: name, number: number, user_id: user.id }]);
+
+            if (error) console.error('Error inserting data:', error);
+            else {
+                document.getElementById('name').value = '';
+                document.getElementById('number').value = '';
+                fetchCustomers();
+            }
+        }
+
+        async function fetchCustomers() {
+            const user = supabase.auth.user();
+            if (!user) return;
+
+            const { data, error } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('user_id', user.id);
+
+            if (error) console.error('Error fetching data:', error);
+            else {
+                const tableBody = document.querySelector('#customerTable tbody');
+                tableBody.innerHTML = '';
+                data.forEach(customer => {
+                    const row = tableBody.insertRow();
+                    row.insertCell(0).textContent = customer.name;
+                    row.insertCell(1).textContent = customer.number;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
+
